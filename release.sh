@@ -1,0 +1,108 @@
+#!/bin/bash
+
+LOG_FILE="/data/releaseLog/deploy_$(date +%Y%m%d).log"
+echo " " >> $LOG_FILE 
+echo "===== $(date) =====" >> $LOG_FILE
+echo "=============== <sample> deploy start ===============" >> $LOG_FILE
+
+## 변수셋팅
+BASE_PATH="/home/jenkins-ssh/deploy"
+JAR_PATH="$(ls -t $BASE_PATH/sample-*.jar | head -1)"
+JAVA_CMD="java -jar"
+JVM_OPTIONS="-Xmx1024m"
+
+echo " profile check..." >> $LOG_FILE
+
+CURRENT_PROFILE=$(curl -s http://localhost/profile)
+
+echo "  > current profile: $CURRENT_PROFILE" >> $LOG_FILE
+
+## profile에 따른 셋팅
+if [ $CURRENT_PROFILE == was1 ] 
+then
+
+  echo " setting target server #2..." >> $LOG_FILE
+
+  SET_PROFILE=was2
+  SET_PORT=8082
+
+elif [ $CURRENT_PROFILE == was2 ] 
+then
+
+  echo " setting target server #1..." >> $LOG_FILE
+
+  SET_PROFILE=was1
+  SET_PORT=8081
+
+else
+
+  echo " not matching target... current profile : $CURRENT_PROFILE"
+  echo " setting target server #1..." >> $LOG_FILE
+
+  SET_PROFILE=was1
+  SET_PORT=8081
+fi
+
+echo "  > profile: $SET_PROFILE" >> $LOG_FILE 
+echo "  > port: $SET_PORT" >> $LOG_FILE
+
+echo " application symbol-link create..." >> $LOG_FILE
+
+APP_NAME="sample.jar"
+DEPLOY_APP=$SET_PROFILE-$APP_NAME
+DEPLOY_APP_PATH=$BASE_PATH/$DEPLOY_APP
+
+#echo ">> $DEPLOY_APP_PATH"
+ln -fs $JAR_PATH $DEPLOY_APP_PATH
+
+## 실행중인 프로세스 kill
+if pgrep -f "$DEPLOY_APP" > /dev/null; then
+  sudo pkill -f "$DEPLOY_APP"
+
+  echo " $DEPLOY_APP  process kill..." >> $LOG_FILE
+
+  sleep 3
+else
+  echo " 현재 구동중인 APP이 없습니다." >> $LOG_FILE
+fi
+
+
+echo "================< Start deploy Jar >===============" >> $LOG_FILE
+
+## jar execute
+BUILD_ID=dontKillMe nohup $JAVA_CMD $JVM_OPTIONS -Dspring.profiles.active=$SET_PROFILE $DEPLOY_APP_PATH > /dev/null 2>&1 & 
+
+echo " $SET_PROFILE health check..." >> $LOG_FILE
+
+sleep 5
+
+## health check logic
+for reCnt in {1..10}
+do
+  response=$(curl -s http://localhost:$SET_PORT/actuator/health)
+  upCount=$(echo $response | grep 'UP' | wc -l) 
+
+
+  if [ $upCount -ge 1 ]
+  then
+    echo "  > Deploy Success!!" >> $LOG_FILE
+    break
+  else
+    echo "  > No response And Unknown Status..." >> $LOG_FILE
+    echo "  > response: $response" >> $LOG_FILE
+  fi
+
+  if [ $reCnt -eq 10 ]
+  then 
+    echo "  > Deploy Fail..." >> $LOG_FILE
+    echo "  > Deploy process Exit..." >> $LOG_FILE
+    exit 1
+  fi
+
+  echo "  > connection fail... Retry! - $reCnt / 10" >> $LOG_FILE
+  sleep 1
+done
+
+## nginx proxy_pass change.
+sleep 3
+/home/jenkins-ssh/nginx-switch.sh

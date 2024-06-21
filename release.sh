@@ -3,7 +3,7 @@
 LOG_FILE="/data/releaseLog/deploy_$(date +%Y%m%d).log"
 echo " " | tee -a $LOG_FILE 
 echo "===== $(date) =====" | tee -a  $LOG_FILE
-echo "=============== deploy start ===============" | tee - a $LOG_FILE
+echo "=============== deploy start ===============" | tee -a $LOG_FILE
 echo " start..."
 
 ## 변수셋팅

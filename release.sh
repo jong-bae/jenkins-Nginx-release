@@ -67,11 +67,20 @@ ln -fs $JAR_PATH $DEPLOY_APP_PATH
 
 ## 실행중인 프로세스 kill
 if pgrep -f "$DEPLOY_APP" > /dev/null; then
+  echo " $DEPLOY_APP is alive... " | tee -a $LOG_FILE
+
   sudo pkill -f "$DEPLOY_APP"
 
   echo " $DEPLOY_APP  process kill..." | tee -a $LOG_FILE
 
-  sleep 3
+  sleep 5
+
+  if [ $? -eq 0 ]; then
+	echo " $DEPLOY_APP process kill success! " | tee -a $LOG_FILE
+  else
+	echo " $DEPLOY_APP process kill fail... " | tee -a $LOG_FILE
+  fi
+
 else
   echo " 현재 구동중인 APP이 없습니다." | tee -a $LOG_FILE
 fi

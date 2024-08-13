@@ -73,12 +73,27 @@ if pgrep -f "$DEPLOY_APP" > /dev/null; then
 
   echo " $DEPLOY_APP  process kill..." | tee -a $LOG_FILE
 
-  sleep 5
-
-  if [ $? -eq 0 ]; then
+  for i in {1..15}; do
+    
+    if pgrep -f "$DEPLOY_APP" > /dev/null; then
+	echo " Waiting for $DEPLOY_APP to terminate... " | tee -a $LOG_FILE
+        sleep 1
+    else
 	echo " $DEPLOY_APP process kill success! " | tee -a $LOG_FILE
-  else
-	echo " $DEPLOY_APP process kill fail... " | tee -a $LOG_FILE
+        break
+    fi
+  done
+
+  if pgrep -f "$DEPLOY_APP" > /dev/null; then
+    echo "$DEPLOY_APP did not terminate... force kill... " | tee -a $LOG_FILE
+    sudo pkill -9 f "$DEPLOY_APP"
+
+    if pgrep -f "$DEPLOY_APP" > /dev/null; then
+      echo "$DEPLOY_APP process kill failed..." | tee -a $LOG_FILE
+    else 
+      echo "$DEPLOY_APP process force kill completed. " | tee -a $LOG_FILE
+    fi
+    
   fi
 
 else

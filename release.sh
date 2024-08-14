@@ -121,15 +121,16 @@ do
   if [ $upCount -ge 1 ]
   then
     echo "  > Deploy Success!!" | tee -a $LOG_FILE
-    
-#    /home/jenkins-ssh/nginx-switch.sh
+
+    ## nginx proxy_pass change.
+    /home/jenkins-ssh/nginx-switch.sh
     break
   else
     echo "  > No response And Unknown Status..." | tee -a $LOG_FILE
     echo "  > response: $response"
   fi
 
-  if [ $reCnt -eq 20 ]
+  if [ $reCnt -eq 21 ]
   then 
     echo "  > Deploy Fail..." | tee -a $LOG_FILE
     echo "  > Deploy process Exit..." | tee -a $LOG_FILE
@@ -144,8 +145,3 @@ do
   echo "  > connection fail... Retry! - $reCnt / 20" | tee -a $LOG_FILE
   sleep 1
 done
-
-## nginx proxy_pass change.
-sleep 3
-/home/jenkins-ssh/nginx-switch.sh
-

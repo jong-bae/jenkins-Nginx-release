@@ -90,6 +90,7 @@ if pgrep -f "$DEPLOY_APP" > /dev/null; then
 
     if pgrep -f "$DEPLOY_APP" > /dev/null; then
       echo "$DEPLOY_APP process kill failed..." | tee -a $LOG_FILE
+      exit 1
     else 
       echo "$DEPLOY_APP process force kill completed. " | tee -a $LOG_FILE
     fi

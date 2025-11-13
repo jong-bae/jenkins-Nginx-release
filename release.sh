@@ -9,8 +9,8 @@ echo " start..."
 ## 변수셋팅
 BASE_PATH="/home/jenkins-ssh/deploy"
 JAR_PATH="$(ls -t $BASE_PATH/sample-*.jar | head -1)"
-JAVA_CMD="java -jar"
 JVM_OPTIONS="-Xmx1024m"
+JAVA_CMD="java $JVM_OPTIONS -jar"
 
 echo " profile check..." | tee -a $LOG_FILE
 
@@ -76,10 +76,10 @@ if pgrep -f "$DEPLOY_APP" > /dev/null; then
   for i in {1..15}; do
     
     if pgrep -f "$DEPLOY_APP" > /dev/null; then
-	echo " Waiting for $DEPLOY_APP to terminate... " | tee -a $LOG_FILE
+		echo " Waiting for $DEPLOY_APP to terminate... " | tee -a $LOG_FILE
         sleep 1
     else
-	echo " $DEPLOY_APP process kill success! " | tee -a $LOG_FILE
+		echo " $DEPLOY_APP process kill success! " | tee -a $LOG_FILE
         break
     fi
   done
@@ -105,7 +105,7 @@ fi
 echo "================< Start deploy Jar >===============" | tee -a $LOG_FILE
 
 ## jar execute
-BUILD_ID=dontKillMe nohup $JAVA_CMD $JVM_OPTIONS -Dspring.profiles.active=$SET_PROFILE $DEPLOY_APP_PATH > /dev/null 2>&1 & 
+BUILD_ID=dontKillMe nohup $JAVA_CMD -Dspring.profiles.active=$SET_PROFILE $DEPLOY_APP_PATH > /dev/null 2>&1 & 
 
 echo " $SET_PROFILE health check..." | tee -a $LOG_FILE
 #echo " curl -s http://localhost:$SET_PORT/actuator/health"
